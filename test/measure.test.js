@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { requestOnce } from '../src/measure.js';
+import { requestOnce, runRequests } from '../src/measure.js';
 
 // Локальный сервер: интернет не нужен, размер ответа известен точно.
 function startServer(handler) {
@@ -49,6 +49,29 @@ test('requestOnce: время включает ожидание всего те�
     const { bytes, ms } = await requestOnce(url);
     assert.equal(bytes, 2000);
     assert.ok(ms >= 90, `время ${ms} мс меньше задержки тела`);
+  } finally {
+    server.close();
+  }
+});
+
+test('runRequests: ровно 10 запросов, строго по очереди', async () => {
+  let active = 0; // сколько запросов сейчас в работе на сервере
+  let maxActive = 0; // максимум одновременно в работе за весь прогон
+  let total = 0; // сколько запросов пришло всего
+  const { server, url } = await startServer((_req, res) => {
+    total++;
+    active++; // запрос пришёл
+    maxActive = Math.max(maxActive, active);
+    setTimeout(() => {
+      active--; // запрос закончен
+      res.end('x'.repeat(1000));
+    }, 5); // задержка нужна, чтобы параллельные запросы успели наложиться
+  });
+  try {
+    const results = await runRequests(url);
+    assert.equal(total, 10); // ловит неверное число запросов
+    assert.equal(results.length, 10);
+    assert.equal(maxActive, 1); // ловит параллельность
   } finally {
     server.close();
   }
