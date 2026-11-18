@@ -1,0 +1,13 @@
+{
+  "name": "download-speed-check",
+  "version": "1.0.0",
+  "description": "Консольный скрипт: измеряет скорость скачивания, делая 10 запросов подряд к указанному адресу",
+  "type": "module",
+  "bin": { "download-speed-check": "src/cli.js" },
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "node --test"
+  },
+  "engines": { "node": ">=20" },
+  "license": "MIT"
+}
