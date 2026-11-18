@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { requestOnce, runRequests, summarize } from '../src/measure.js';
+import { requestOnce, runRequests, summarize, formatReport } from '../src/measure.js';
 
 // Локальный сервер: интернет не нужен, размер ответа известен точно.
 function startServer(handler) {
@@ -100,4 +100,16 @@ test('summarize: скорость = всего байт / всё время, а 
 
 test('summarize: пустой ввод бросает ошибку', () => {
   assert.throws(() => summarize([]), /Нет результатов/);
+});
+
+test('formatReport: печатает число запросов, время, объём и обе скорости', () => {
+  const text = formatReport(summarize([
+    { bytes: 1_000_000, ms: 500 },
+    { bytes: 3_000_000, ms: 1500 },
+  ]));
+  assert.match(text, /Запросов:\s+2/);
+  assert.match(text, /Среднее время:\s+1000\.0 мс/);
+  assert.match(text, /4\.00 МБ \(4000000 байт\)/);
+  assert.match(text, /16\.00 Мбит\/с/);
+  assert.match(text, /2\.00 МБ\/с/);
 });

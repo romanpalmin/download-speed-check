@@ -47,3 +47,14 @@ export function summarize(results) {
     megabitsPerSecond: (totalBytes * 8) / 1_000_000 / totalSeconds,
   };
 }
+
+/** Превращает итоги в текст для консоли. */
+export function formatReport(s) {
+  return [
+    `Запросов:       ${s.requests}`,
+    `Среднее время:  ${s.averageMs.toFixed(1)} мс`,
+    `Скачано всего:  ${(s.totalBytes / 1_000_000).toFixed(2)} МБ (${s.totalBytes} байт)`,
+    `Скорость:       ${s.megabitsPerSecond.toFixed(2)} Мбит/с`,
+    `                ${s.megabytesPerSecond.toFixed(2)} МБ/с`,
+  ].join('\n');
+}
