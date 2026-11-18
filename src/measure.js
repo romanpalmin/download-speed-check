@@ -26,3 +26,24 @@ export async function runRequests(url, count = DEFAULT_REQUESTS, fetchImpl = fet
   }
   return results;
 }
+
+/**
+ * Агрегация. Скорость = всего байт / всё время (а не среднее скоростей
+ * отдельных запросов: оно завышает вес быстрых маленьких ответов).
+ * Единицы: 1 МБ = 1 000 000 байт, 1 Мбит = 1 000 000 бит (десятичные,
+ * как у интернет-провайдеров).
+ */
+export function summarize(results) {
+  if (results.length === 0) throw new Error('Нет результатов для подсчёта');
+  const totalBytes = results.reduce((sum, r) => sum + r.bytes, 0);
+  const totalMs = results.reduce((sum, r) => sum + r.ms, 0);
+  const totalSeconds = totalMs / 1000;
+  return {
+    requests: results.length,
+    averageMs: totalMs / results.length,
+    totalBytes,
+    totalMs,
+    megabytesPerSecond: totalBytes / 1_000_000 / totalSeconds,
+    megabitsPerSecond: (totalBytes * 8) / 1_000_000 / totalSeconds,
+  };
+}

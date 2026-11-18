@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { requestOnce, runRequests } from '../src/measure.js';
+import { requestOnce, runRequests, summarize } from '../src/measure.js';
 
 // Локальный сервер: интернет не нужен, размер ответа известен точно.
 function startServer(handler) {
@@ -75,4 +75,29 @@ test('runRequests: ровно 10 запросов, строго по очере�
   } finally {
     server.close();
   }
+});
+
+test('summarize: среднее время, объём и обе единицы скорости', () => {
+  const s = summarize([
+    { bytes: 1_000_000, ms: 500 },
+    { bytes: 3_000_000, ms: 1500 },
+  ]);
+  assert.equal(s.requests, 2);
+  assert.equal(s.averageMs, 1000);
+  assert.equal(s.totalBytes, 4_000_000);
+  assert.equal(s.megabytesPerSecond, 2); // 4 МБ / 2 с
+  assert.equal(s.megabitsPerSecond, 16); // 2 МБ/с * 8
+});
+
+test('summarize: скорость = всего байт / всё время, а не среднее скоростей', () => {
+  // 1 МБ за 0,1 с (10 МБ/с) и 1 МБ за 0,9 с (~1,11 МБ/с): среднее скоростей ~5,6, верный ответ 2
+  const s = summarize([
+    { bytes: 1_000_000, ms: 100 },
+    { bytes: 1_000_000, ms: 900 },
+  ]);
+  assert.equal(s.megabytesPerSecond, 2);
+});
+
+test('summarize: пустой ввод бросает ошибку', () => {
+  assert.throws(() => summarize([]), /Нет результатов/);
 });
